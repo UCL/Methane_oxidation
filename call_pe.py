@@ -231,335 +231,384 @@ xval32, yval32 = confidence_ellipsoid32(est_m3,COV3_obs[-1],0.05)
 # newdata = insilico_exp(u_p[0],truetheta,km3,truepdtheta,y_cov)
 
 # plot1 = distributionplot1(u_p[0],est_m3,km3,Pi[-1],CI3[-1])
-plot2 = list()
-for i in range(mexp):
-    plot2 += [distributionplot2(u_p[i],y_meas,km2,est_m2,COV2_obs[-1],Pi[-1])]
-plot3 = list()
-for i in range(mexp):
-    plot3 += [distributionplot2(u_p[i],y_meas,km3,est_m3,COV3_obs[-1],Pi[-1])]
 
-plot4 = list()
-for i in range(mexp):
-    plot4 += [distributionplot3(u_p[i],est_m3,km3,Pi[-1],COV3_obs[-1])]
+
+# plot2 = list()
+# for i in range(mexp):
+#     plot2 += [distributionplot2(u_p[i],y_meas,km2,est_m2,COV2_obs[-1],Pi[-1])]
+# plot3 = list()
+# for i in range(mexp):
+#     plot3 += [distributionplot2(u_p[i],y_meas,km3,est_m3,COV3_obs[-1],Pi[-1])]
+
+# plot4 = list()
+# for i in range(mexp):
+#     plot4 += [distributionplot3(u_p[i],est_m3,km3,Pi[-1],COV3_obs[-1])]
     
-plot5 = list()
-for i in range(mexp):
-    plot5 += [distributionplot3(u_p[i],est_m2,km2,Pi[-1],COV2_obs[-1])]
+# plot5 = list()
+# for i in range(mexp):
+#     plot5 += [distributionplot3(u_p[i],est_m2,km2,Pi[-1],COV2_obs[-1])]
+    
+    
+u1_ext = np.linspace(100.0,400.0,num=5)
+u2_ext = np.linspace(10.0,40.0,num=5)
+u3_ext = np.linspace(0.005,0.05,num=5)
+u4_ext = np.linspace(2.0,6.0,num=5)
+u1array, u2array, u3array, u4array = np.meshgrid(u1_ext,u2_ext,u3_ext,u4_ext)
+u1vals = np.ravel(u1array, order = 'F')
+u2vals = np.ravel(u2array, order = 'F')
+u3vals = np.ravel(u3array, order = 'F')
+u4vals = np.ravel(u4array, order = 'F')
+grid_data = np.zeros([len(u1vals),4])
+for i in range(len(u1vals)):
+  grid_data[i,0] = u1vals[i]
+  grid_data[i,1] = u2vals[i]
+  grid_data[i,2] = u3vals[i]
+  grid_data[i,3] = u4vals[i]
+  
+md_obj = np.zeros(len(grid_data))
+pp_obj = np.zeros(len(grid_data))
 
+for i in range(len(grid_data)):
+    md_obj[i] = mbdoemd_BF(grid_data[i],y_meas,km2,km3,est_m2,est_m3,FIM2_obs[-1],FIM3_obs[-1],Pi[-1],1,n_phi) * (-1.0)
+    pp_obj[i] = mbdoepp(grid_data[i],y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],1,n_phi)
+    
 wb = Workbook()
 ws = wb.active
-ws.title = 'PE results'
+ws.title = 'Extended range'
 
-ws.cell(row = 1, column = 1, value = ('Model 1'))
-ws.cell(row = 2, column = 1, value = ('Estimate'))
-ws.cell(row = 2, column = 2, value = ('CI'))
-ws.cell(row = 2, column = 3, value = ('tvalue'))
-ws.cell(row = 2, column = 4, value = ('Chisquare'))
-ws.cell(row = 2, column = 5, value = ('Probability'))
+ws.cell(row = 1, column = 1, value = ('Temperature'))
+ws.cell(row = 1, column = 2, value = ('Mass flow'))
+ws.cell(row = 1, column = 3, value = ('Inlet conc.'))
+ws.cell(row = 1, column = 4, value = ('Mole ratio'))
+ws.cell(row = 1, column = 5, value = ('MD obj'))
+ws.cell(row = 1, column = 6, value = ('PP obj'))
 
-ws.cell(row = 1, column = 7, value = ('Model 2'))
-ws.cell(row = 2, column = 7, value = ('Estimate'))
-ws.cell(row = 2, column = 8, value = ('CI'))
-ws.cell(row = 2, column = 9, value = ('tvalue'))
-ws.cell(row = 2, column = 10, value = ('Chisquare'))
-ws.cell(row = 2, column = 11, value = ('Probability'))
+for i in range(len(grid_data)):
+    ws.cell(row = i + 2, column = 1, value = (grid_data[i,0]))
+    ws.cell(row = i + 2, column = 2, value = (grid_data[i,1]))
+    ws.cell(row = i + 2, column = 3, value = (grid_data[i,2]))
+    ws.cell(row = i + 2, column = 4, value = (grid_data[i,3]))
+    ws.cell(row = i + 2, column = 5, value = (md_obj[i]))
+    ws.cell(row = i + 2, column = 6, value = (pp_obj[i]))
+
+wb.save('CH4oxidretronew_newresults_factorialplus8_review_extrange_Solomon.xlsx')
+
+# wb = Workbook()
+# ws = wb.active
+# ws.title = 'PE results'
+
+# ws.cell(row = 1, column = 1, value = ('Model 1'))
+# ws.cell(row = 2, column = 1, value = ('Estimate'))
+# ws.cell(row = 2, column = 2, value = ('CI'))
+# ws.cell(row = 2, column = 3, value = ('tvalue'))
+# ws.cell(row = 2, column = 4, value = ('Chisquare'))
+# ws.cell(row = 2, column = 5, value = ('Probability'))
+
+# ws.cell(row = 1, column = 7, value = ('Model 2'))
+# ws.cell(row = 2, column = 7, value = ('Estimate'))
+# ws.cell(row = 2, column = 8, value = ('CI'))
+# ws.cell(row = 2, column = 9, value = ('tvalue'))
+# ws.cell(row = 2, column = 10, value = ('Chisquare'))
+# ws.cell(row = 2, column = 11, value = ('Probability'))
    
-ws.cell(row = 1, column = 13, value = ('Model 3'))
-ws.cell(row = 2, column = 13, value = ('Estimate'))
-ws.cell(row = 2, column = 14, value = ('CI'))
-ws.cell(row = 2, column = 15, value = ('tvalue'))
-ws.cell(row = 2, column = 16, value = ('Chisquare'))
-ws.cell(row = 2, column = 17, value = ('Probability'))
+# ws.cell(row = 1, column = 13, value = ('Model 3'))
+# ws.cell(row = 2, column = 13, value = ('Estimate'))
+# ws.cell(row = 2, column = 14, value = ('CI'))
+# ws.cell(row = 2, column = 15, value = ('tvalue'))
+# ws.cell(row = 2, column = 16, value = ('Chisquare'))
+# ws.cell(row = 2, column = 17, value = ('Probability'))
     
 
-for i in range(np.shape(est_m1)[0]):
-    ws.cell(row = 3+i, column = 1, value = (est_m1[i]))
-    ws.cell(row = 3+i, column = 2, value = (CI1[-1][i]))
-    ws.cell(row = 3+i, column = 3, value = (tval1[-1][i]))
-ws.cell(row = 3+np.shape(est_m1)[0], column = 3, value = (tref1))
-ws.cell(row = 3, column = 4, value = (objf_m1))
-ws.cell(row = 4, column = 4, value = (refchisq1))
-ws.cell(row = 3, column = 5, value = (obspr1[-1][0]))
-for i in range(np.shape(est_m2)[0]):
-    ws.cell(row = 3+i, column = 7, value = (est_m2[i]))
-    ws.cell(row = 3+i, column = 8, value = (CI2[-1][i]))
-    ws.cell(row = 3+i, column = 9, value = (tval2[-1][i]))
-ws.cell(row = 3+np.shape(est_m2)[0], column = 9, value = (tref2))
-ws.cell(row = 3, column = 10, value = (objf_m2))
-ws.cell(row = 4, column = 10, value = (refchisq2))
-ws.cell(row = 3, column = 11, value = (obspr1[-1][1]))
-for i in range(np.shape(est_m3)[0]):
-    ws.cell(row = 3+i, column = 13, value = (est_m3[i]))
-    ws.cell(row = 3+i, column = 14, value = (CI3[-1][i]))
-    ws.cell(row = 3+i, column = 15, value = (tval3[-1][i]))
-ws.cell(row = 3+np.shape(est_m3)[0], column = 15, value = (tref3))
-ws.cell(row = 3, column = 16, value = (objf_m3))
-ws.cell(row = 4, column = 16, value = (refchisq3))
-ws.cell(row = 3, column = 17, value = (obspr1[-1][2]))
+# for i in range(np.shape(est_m1)[0]):
+#     ws.cell(row = 3+i, column = 1, value = (est_m1[i]))
+#     ws.cell(row = 3+i, column = 2, value = (CI1[-1][i]))
+#     ws.cell(row = 3+i, column = 3, value = (tval1[-1][i]))
+# ws.cell(row = 3+np.shape(est_m1)[0], column = 3, value = (tref1))
+# ws.cell(row = 3, column = 4, value = (objf_m1))
+# ws.cell(row = 4, column = 4, value = (refchisq1))
+# ws.cell(row = 3, column = 5, value = (obspr1[-1][0]))
+# for i in range(np.shape(est_m2)[0]):
+#     ws.cell(row = 3+i, column = 7, value = (est_m2[i]))
+#     ws.cell(row = 3+i, column = 8, value = (CI2[-1][i]))
+#     ws.cell(row = 3+i, column = 9, value = (tval2[-1][i]))
+# ws.cell(row = 3+np.shape(est_m2)[0], column = 9, value = (tref2))
+# ws.cell(row = 3, column = 10, value = (objf_m2))
+# ws.cell(row = 4, column = 10, value = (refchisq2))
+# ws.cell(row = 3, column = 11, value = (obspr1[-1][1]))
+# for i in range(np.shape(est_m3)[0]):
+#     ws.cell(row = 3+i, column = 13, value = (est_m3[i]))
+#     ws.cell(row = 3+i, column = 14, value = (CI3[-1][i]))
+#     ws.cell(row = 3+i, column = 15, value = (tval3[-1][i]))
+# ws.cell(row = 3+np.shape(est_m3)[0], column = 15, value = (tref3))
+# ws.cell(row = 3, column = 16, value = (objf_m3))
+# ws.cell(row = 4, column = 16, value = (refchisq3))
+# ws.cell(row = 3, column = 17, value = (obspr1[-1][2]))
     
-ws1 = wb.create_sheet('Correlation matrix')
-ws1.cell(row = 1, column = 1, value = ('Model 1'))
-ws1.cell(row = 2, column = 1, value = ('column1'))
-ws1.cell(row = 2, column = 2, value = ('column2'))
+# ws1 = wb.create_sheet('Correlation matrix')
+# ws1.cell(row = 1, column = 1, value = ('Model 1'))
+# ws1.cell(row = 2, column = 1, value = ('column1'))
+# ws1.cell(row = 2, column = 2, value = ('column2'))
    
-ws1.cell(row = 1, column = 5, value = ('Model 2'))
-ws1.cell(row = 2, column = 5, value = ('column1'))
-ws1.cell(row = 2, column = 6, value = ('column2'))
-ws1.cell(row = 2, column = 7, value = ('column3'))
-ws1.cell(row = 2, column = 8, value = ('column4'))
-ws1.cell(row = 2, column = 9, value = ('column5'))
-ws1.cell(row = 2, column = 10, value = ('column6'))
+# ws1.cell(row = 1, column = 5, value = ('Model 2'))
+# ws1.cell(row = 2, column = 5, value = ('column1'))
+# ws1.cell(row = 2, column = 6, value = ('column2'))
+# ws1.cell(row = 2, column = 7, value = ('column3'))
+# ws1.cell(row = 2, column = 8, value = ('column4'))
+# ws1.cell(row = 2, column = 9, value = ('column5'))
+# ws1.cell(row = 2, column = 10, value = ('column6'))
     
-ws1.cell(row = 1, column = 13, value = ('Model 3'))
-ws1.cell(row = 2, column = 13, value = ('column1'))
-ws1.cell(row = 2, column = 14, value = ('column2'))
-ws1.cell(row = 2, column = 15, value = ('column3'))
-ws1.cell(row = 2, column = 16, value = ('column4'))
-ws1.cell(row = 2, column = 17, value = ('column5'))
-ws1.cell(row = 2, column = 18, value = ('column6'))
+# ws1.cell(row = 1, column = 13, value = ('Model 3'))
+# ws1.cell(row = 2, column = 13, value = ('column1'))
+# ws1.cell(row = 2, column = 14, value = ('column2'))
+# ws1.cell(row = 2, column = 15, value = ('column3'))
+# ws1.cell(row = 2, column = 16, value = ('column4'))
+# ws1.cell(row = 2, column = 17, value = ('column5'))
+# ws1.cell(row = 2, column = 18, value = ('column6'))
     
-for i in range(np.shape(est_m1)[0]):
-    ws1.cell(row = 3+i, column = 1, value = (COR1_obs[-1][:,0][i]))
-    ws1.cell(row = 3+i, column = 2, value = (COR1_obs[-1][:,1][i]))
-for i in range(np.shape(est_m2)[0]):
-    ws1.cell(row = 3+i, column = 5, value = (COR2_obs[-1][:,0][i]))
-    ws1.cell(row = 3+i, column = 6, value = (COR2_obs[-1][:,1][i]))
-    ws1.cell(row = 3+i, column = 7, value = (COR2_obs[-1][:,2][i]))
-    ws1.cell(row = 3+i, column = 8, value = (COR2_obs[-1][:,3][i]))
-    ws1.cell(row = 3+i, column = 9, value = (COR2_obs[-1][:,4][i]))
-    ws1.cell(row = 3+i, column = 10, value = (COR2_obs[-1][:,5][i]))
-for i in range(np.shape(est_m3)[0]):
-    ws1.cell(row = 3+i, column = 13, value = (COR3_obs[-1][:,0][i]))
-    ws1.cell(row = 3+i, column = 14, value = (COR3_obs[-1][:,1][i]))
-    ws1.cell(row = 3+i, column = 15, value = (COR3_obs[-1][:,2][i]))
-    ws1.cell(row = 3+i, column = 16, value = (COR3_obs[-1][:,3][i]))
-    ws1.cell(row = 3+i, column = 17, value = (COR3_obs[-1][:,4][i]))
-    ws1.cell(row = 3+i, column = 18, value = (COR3_obs[-1][:,5][i]))
+# for i in range(np.shape(est_m1)[0]):
+#     ws1.cell(row = 3+i, column = 1, value = (COR1_obs[-1][:,0][i]))
+#     ws1.cell(row = 3+i, column = 2, value = (COR1_obs[-1][:,1][i]))
+# for i in range(np.shape(est_m2)[0]):
+#     ws1.cell(row = 3+i, column = 5, value = (COR2_obs[-1][:,0][i]))
+#     ws1.cell(row = 3+i, column = 6, value = (COR2_obs[-1][:,1][i]))
+#     ws1.cell(row = 3+i, column = 7, value = (COR2_obs[-1][:,2][i]))
+#     ws1.cell(row = 3+i, column = 8, value = (COR2_obs[-1][:,3][i]))
+#     ws1.cell(row = 3+i, column = 9, value = (COR2_obs[-1][:,4][i]))
+#     ws1.cell(row = 3+i, column = 10, value = (COR2_obs[-1][:,5][i]))
+# for i in range(np.shape(est_m3)[0]):
+#     ws1.cell(row = 3+i, column = 13, value = (COR3_obs[-1][:,0][i]))
+#     ws1.cell(row = 3+i, column = 14, value = (COR3_obs[-1][:,1][i]))
+#     ws1.cell(row = 3+i, column = 15, value = (COR3_obs[-1][:,2][i]))
+#     ws1.cell(row = 3+i, column = 16, value = (COR3_obs[-1][:,3][i]))
+#     ws1.cell(row = 3+i, column = 17, value = (COR3_obs[-1][:,4][i]))
+#     ws1.cell(row = 3+i, column = 18, value = (COR3_obs[-1][:,5][i]))
 
-ws2 = wb.create_sheet('Confidence ellipse')
-ws2.cell(row = 1, column = 1, value = ('Exp. No.'))
-ws2.cell(row = 1, column = 2, value = ('Model'))
-ws2.cell(row = 1, column = 3, value = ('x value'))
-ws2.cell(row = 1, column = 4, value = ('y value'))
+# ws2 = wb.create_sheet('Confidence ellipse')
+# ws2.cell(row = 1, column = 1, value = ('Exp. No.'))
+# ws2.cell(row = 1, column = 2, value = ('Model'))
+# ws2.cell(row = 1, column = 3, value = ('x value'))
+# ws2.cell(row = 1, column = 4, value = ('y value'))
     
-ws2.cell(row = 1, column = 7, value = ('Exp. No.'))
-ws2.cell(row = 1, column = 8, value = ('Model'))
-ws2.cell(row = 1, column = 9, value = ('x value'))
-ws2.cell(row = 1, column = 10, value = ('y value'))
+# ws2.cell(row = 1, column = 7, value = ('Exp. No.'))
+# ws2.cell(row = 1, column = 8, value = ('Model'))
+# ws2.cell(row = 1, column = 9, value = ('x value'))
+# ws2.cell(row = 1, column = 10, value = ('y value'))
 
-ws2.cell(row = 1, column = 13, value = ('Exp. No.'))
-ws2.cell(row = 1, column = 14, value = ('Model'))
-ws2.cell(row = 1, column = 15, value = ('x value'))
-ws2.cell(row = 1, column = 16, value = ('y value'))
+# ws2.cell(row = 1, column = 13, value = ('Exp. No.'))
+# ws2.cell(row = 1, column = 14, value = ('Model'))
+# ws2.cell(row = 1, column = 15, value = ('x value'))
+# ws2.cell(row = 1, column = 16, value = ('y value'))
     
-ws2.cell(row = 2, column = 1, value = (mexp))
-ws2.cell(row = 2, column = 2, value = ('Model 1'))
-ws2.cell(row = 2, column = 7, value = (mexp))
-ws2.cell(row = 2, column = 8, value = ('Model 3_31'))
-ws2.cell(row = 2, column = 13, value = (mexp))
-ws2.cell(row = 2, column = 14, value = ('Model 3_32'))
-for i in range(np.shape(xval31)[0]):
-    ws2.cell(row = 2+i, column = 3, value = (xval1[i]))
-    ws2.cell(row = 2+i, column = 4, value = (yval1[i]))
-    ws2.cell(row = 2+i, column = 9, value = (xval31[i]))
-    ws2.cell(row = 2+i, column = 10, value = (yval31[i]))
-    ws2.cell(row = 2+i, column = 15, value = (xval32[i]))
-    ws2.cell(row = 2+i, column = 16, value = (yval32[i]))
+# ws2.cell(row = 2, column = 1, value = (mexp))
+# ws2.cell(row = 2, column = 2, value = ('Model 1'))
+# ws2.cell(row = 2, column = 7, value = (mexp))
+# ws2.cell(row = 2, column = 8, value = ('Model 3_31'))
+# ws2.cell(row = 2, column = 13, value = (mexp))
+# ws2.cell(row = 2, column = 14, value = ('Model 3_32'))
+# for i in range(np.shape(xval31)[0]):
+#     ws2.cell(row = 2+i, column = 3, value = (xval1[i]))
+#     ws2.cell(row = 2+i, column = 4, value = (yval1[i]))
+#     ws2.cell(row = 2+i, column = 9, value = (xval31[i]))
+#     ws2.cell(row = 2+i, column = 10, value = (yval31[i]))
+#     ws2.cell(row = 2+i, column = 15, value = (xval32[i]))
+#     ws2.cell(row = 2+i, column = 16, value = (yval32[i]))
 
-ws3 = wb.create_sheet('Simulation')
-ws3.cell(row = 1, column = 1, value = ('Model 1'))
-ws3.cell(row = 2, column = 1, value = ('Experiment'))
-ws3.cell(row = 2, column = 2, value = ('Methane'))
-ws3.cell(row = 2, column = 3, value = ('Oxygen'))
-ws3.cell(row = 2, column = 4, value = ('Carbon dioxide'))
+# ws3 = wb.create_sheet('Simulation')
+# ws3.cell(row = 1, column = 1, value = ('Model 1'))
+# ws3.cell(row = 2, column = 1, value = ('Experiment'))
+# ws3.cell(row = 2, column = 2, value = ('Methane'))
+# ws3.cell(row = 2, column = 3, value = ('Oxygen'))
+# ws3.cell(row = 2, column = 4, value = ('Carbon dioxide'))
 
-ws3.cell(row = 1, column = 7, value = ('Model 2'))
-ws3.cell(row = 2, column = 7, value = ('Experiment'))
-ws3.cell(row = 2, column = 8, value = ('Methane'))
-ws3.cell(row = 2, column = 9, value = ('Oxygen'))
-ws3.cell(row = 2, column = 10, value = ('Carbon dioxide'))
+# ws3.cell(row = 1, column = 7, value = ('Model 2'))
+# ws3.cell(row = 2, column = 7, value = ('Experiment'))
+# ws3.cell(row = 2, column = 8, value = ('Methane'))
+# ws3.cell(row = 2, column = 9, value = ('Oxygen'))
+# ws3.cell(row = 2, column = 10, value = ('Carbon dioxide'))
 
-ws3.cell(row = 1, column = 13, value = ('Model 3'))
-ws3.cell(row = 2, column = 13, value = ('Experiment'))
-ws3.cell(row = 2, column = 14, value = ('Methane'))
-ws3.cell(row = 2, column = 15, value = ('Oxygen'))
-ws3.cell(row = 2, column = 16, value = ('Carbon dioxide'))
+# ws3.cell(row = 1, column = 13, value = ('Model 3'))
+# ws3.cell(row = 2, column = 13, value = ('Experiment'))
+# ws3.cell(row = 2, column = 14, value = ('Methane'))
+# ws3.cell(row = 2, column = 15, value = ('Oxygen'))
+# ws3.cell(row = 2, column = 16, value = ('Carbon dioxide'))
 
 
-for i in range(mexp):
-    ws3.cell(row = 3+i, column = 1, value = (i+1))
-    ws3.cell(row = 3+i, column = 2, value = (sim1[:,0][i]))
-    ws3.cell(row = 3+i, column = 3, value = (sim1[:,1][i]))
-    ws3.cell(row = 3+i, column = 4, value = (sim1[:,2][i]))
+# for i in range(mexp):
+#     ws3.cell(row = 3+i, column = 1, value = (i+1))
+#     ws3.cell(row = 3+i, column = 2, value = (sim1[:,0][i]))
+#     ws3.cell(row = 3+i, column = 3, value = (sim1[:,1][i]))
+#     ws3.cell(row = 3+i, column = 4, value = (sim1[:,2][i]))
     
-    ws3.cell(row = 3+i, column = 7, value = (i+1))
-    ws3.cell(row = 3+i, column = 8, value = (sim2[:,0][i]))
-    ws3.cell(row = 3+i, column = 9, value = (sim2[:,1][i]))
-    ws3.cell(row = 3+i, column = 10, value = (sim2[:,2][i]))
+#     ws3.cell(row = 3+i, column = 7, value = (i+1))
+#     ws3.cell(row = 3+i, column = 8, value = (sim2[:,0][i]))
+#     ws3.cell(row = 3+i, column = 9, value = (sim2[:,1][i]))
+#     ws3.cell(row = 3+i, column = 10, value = (sim2[:,2][i]))
     
-    ws3.cell(row = 3+i, column = 13, value = (i+1))
-    ws3.cell(row = 3+i, column = 14, value = (sim3[:,0][i]))
-    ws3.cell(row = 3+i, column = 15, value = (sim3[:,1][i]))
-    ws3.cell(row = 3+i, column = 16, value = (sim3[:,2][i]))
+#     ws3.cell(row = 3+i, column = 13, value = (i+1))
+#     ws3.cell(row = 3+i, column = 14, value = (sim3[:,0][i]))
+#     ws3.cell(row = 3+i, column = 15, value = (sim3[:,1][i]))
+#     ws3.cell(row = 3+i, column = 16, value = (sim3[:,2][i]))
     
-ws4 = wb.create_sheet('Residual distribution')
-ws4.cell(row = 1, column = 1, value = ('Model 1 normalised'))
-ws4.cell(row = 2, column = 1, value = ('Experiment'))
-ws4.cell(row = 2, column = 2, value = ('Methane'))
-ws4.cell(row = 2, column = 3, value = ('Oxygen'))
-ws4.cell(row = 2, column = 4, value = ('Carbon dioxide'))
+# ws4 = wb.create_sheet('Residual distribution')
+# ws4.cell(row = 1, column = 1, value = ('Model 1 normalised'))
+# ws4.cell(row = 2, column = 1, value = ('Experiment'))
+# ws4.cell(row = 2, column = 2, value = ('Methane'))
+# ws4.cell(row = 2, column = 3, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 4, value = ('Carbon dioxide'))
 
-ws4.cell(row = 1, column = 7, value = ('Model 2 normalised'))
-ws4.cell(row = 2, column = 7, value = ('Experiment'))
-ws4.cell(row = 2, column = 8, value = ('Methane'))
-ws4.cell(row = 2, column = 9, value = ('Oxygen'))
-ws4.cell(row = 2, column = 10, value = ('Carbon dioxide'))
+# ws4.cell(row = 1, column = 7, value = ('Model 2 normalised'))
+# ws4.cell(row = 2, column = 7, value = ('Experiment'))
+# ws4.cell(row = 2, column = 8, value = ('Methane'))
+# ws4.cell(row = 2, column = 9, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 10, value = ('Carbon dioxide'))
 
-ws4.cell(row = 1, column = 13, value = ('Model 3 normalised'))
-ws4.cell(row = 2, column = 13, value = ('Experiment'))
-ws4.cell(row = 2, column = 14, value = ('Methane'))
-ws4.cell(row = 2, column = 15, value = ('Oxygen'))
-ws4.cell(row = 2, column = 16, value = ('Carbon dioxide'))
+# ws4.cell(row = 1, column = 13, value = ('Model 3 normalised'))
+# ws4.cell(row = 2, column = 13, value = ('Experiment'))
+# ws4.cell(row = 2, column = 14, value = ('Methane'))
+# ws4.cell(row = 2, column = 15, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 16, value = ('Carbon dioxide'))
 
-ws4.cell(row = 1, column = 18, value = ('Model 1'))
-ws4.cell(row = 2, column = 18, value = ('Experiment'))
-ws4.cell(row = 2, column = 19, value = ('Methane'))
-ws4.cell(row = 2, column = 20, value = ('Oxygen'))
-ws4.cell(row = 2, column = 21, value = ('Carbon dioxide'))
+# ws4.cell(row = 1, column = 18, value = ('Model 1'))
+# ws4.cell(row = 2, column = 18, value = ('Experiment'))
+# ws4.cell(row = 2, column = 19, value = ('Methane'))
+# ws4.cell(row = 2, column = 20, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 21, value = ('Carbon dioxide'))
 
-ws4.cell(row = 1, column = 24, value = ('Model 2'))
-ws4.cell(row = 2, column = 24, value = ('Experiment'))
-ws4.cell(row = 2, column = 25, value = ('Methane'))
-ws4.cell(row = 2, column = 26, value = ('Oxygen'))
-ws4.cell(row = 2, column = 27, value = ('Carbon dioxide'))
+# ws4.cell(row = 1, column = 24, value = ('Model 2'))
+# ws4.cell(row = 2, column = 24, value = ('Experiment'))
+# ws4.cell(row = 2, column = 25, value = ('Methane'))
+# ws4.cell(row = 2, column = 26, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 27, value = ('Carbon dioxide'))
 
-ws4.cell(row = 1, column = 30, value = ('Model 3'))
-ws4.cell(row = 2, column = 30, value = ('Experiment'))
-ws4.cell(row = 2, column = 31, value = ('Methane'))
-ws4.cell(row = 2, column = 32, value = ('Oxygen'))
-ws4.cell(row = 2, column = 33, value = ('Carbon dioxide'))
+# ws4.cell(row = 1, column = 30, value = ('Model 3'))
+# ws4.cell(row = 2, column = 30, value = ('Experiment'))
+# ws4.cell(row = 2, column = 31, value = ('Methane'))
+# ws4.cell(row = 2, column = 32, value = ('Oxygen'))
+# ws4.cell(row = 2, column = 33, value = ('Carbon dioxide'))
 
 
-for i in range(mexp):
-    ws4.cell(row = 3+i, column = 18, value = (i+1))
-    ws4.cell(row = 3+i, column = 19, value = (resid1[:,0][i]))
-    ws4.cell(row = 3+i, column = 20, value = (resid1[:,1][i]))
-    ws4.cell(row = 3+i, column = 21, value = (resid1[:,2][i]))
+# for i in range(mexp):
+#     ws4.cell(row = 3+i, column = 18, value = (i+1))
+#     ws4.cell(row = 3+i, column = 19, value = (resid1[:,0][i]))
+#     ws4.cell(row = 3+i, column = 20, value = (resid1[:,1][i]))
+#     ws4.cell(row = 3+i, column = 21, value = (resid1[:,2][i]))
 
-    ws4.cell(row = 3+i, column = 24, value = (i+1))
-    ws4.cell(row = 3+i, column = 25, value = (resid2[:,0][i]))
-    ws4.cell(row = 3+i, column = 26, value = (resid2[:,1][i]))
-    ws4.cell(row = 3+i, column = 27, value = (resid2[:,2][i]))
+#     ws4.cell(row = 3+i, column = 24, value = (i+1))
+#     ws4.cell(row = 3+i, column = 25, value = (resid2[:,0][i]))
+#     ws4.cell(row = 3+i, column = 26, value = (resid2[:,1][i]))
+#     ws4.cell(row = 3+i, column = 27, value = (resid2[:,2][i]))
     
-    ws4.cell(row = 3+i, column = 30, value = (i+1))
-    ws4.cell(row = 3+i, column = 31, value = (resid3[:,0][i]))
-    ws4.cell(row = 3+i, column = 32, value = (resid3[:,1][i]))
-    ws4.cell(row = 3+i, column = 33, value = (resid3[:,2][i]))
+#     ws4.cell(row = 3+i, column = 30, value = (i+1))
+#     ws4.cell(row = 3+i, column = 31, value = (resid3[:,0][i]))
+#     ws4.cell(row = 3+i, column = 32, value = (resid3[:,1][i]))
+#     ws4.cell(row = 3+i, column = 33, value = (resid3[:,2][i]))
     
-    ws4.cell(row = 3+i, column = 1, value = (i+1))
-    ws4.cell(row = 3+i, column = 2, value = (nresid1[:,0][i]))
-    ws4.cell(row = 3+i, column = 3, value = (nresid1[:,1][i]))
-    ws4.cell(row = 3+i, column = 4, value = (nresid1[:,2][i]))
+#     ws4.cell(row = 3+i, column = 1, value = (i+1))
+#     ws4.cell(row = 3+i, column = 2, value = (nresid1[:,0][i]))
+#     ws4.cell(row = 3+i, column = 3, value = (nresid1[:,1][i]))
+#     ws4.cell(row = 3+i, column = 4, value = (nresid1[:,2][i]))
 
-    ws4.cell(row = 3+i, column = 7, value = (i+1))
-    ws4.cell(row = 3+i, column = 8, value = (nresid2[:,0][i]))
-    ws4.cell(row = 3+i, column = 9, value = (nresid2[:,1][i]))
-    ws4.cell(row = 3+i, column = 10, value = (nresid2[:,2][i]))
+#     ws4.cell(row = 3+i, column = 7, value = (i+1))
+#     ws4.cell(row = 3+i, column = 8, value = (nresid2[:,0][i]))
+#     ws4.cell(row = 3+i, column = 9, value = (nresid2[:,1][i]))
+#     ws4.cell(row = 3+i, column = 10, value = (nresid2[:,2][i]))
     
-    ws4.cell(row = 3+i, column = 13, value = (i+1))
-    ws4.cell(row = 3+i, column = 14, value = (nresid3[:,0][i]))
-    ws4.cell(row = 3+i, column = 15, value = (nresid3[:,1][i]))
-    ws4.cell(row = 3+i, column = 16, value = (nresid3[:,2][i]))
+#     ws4.cell(row = 3+i, column = 13, value = (i+1))
+#     ws4.cell(row = 3+i, column = 14, value = (nresid3[:,0][i]))
+#     ws4.cell(row = 3+i, column = 15, value = (nresid3[:,1][i]))
+#     ws4.cell(row = 3+i, column = 16, value = (nresid3[:,2][i]))
     
-ws5 = wb.create_sheet('Prediction variance')
-ws5.cell(row = 1, column = 1, value = ('Model 1'))
-ws5.cell(row = 2, column = 1, value = ('Experiment'))
-ws5.cell(row = 2, column = 2, value = ('Methane'))
-ws5.cell(row = 2, column = 3, value = ('Oxygen'))
-ws5.cell(row = 2, column = 4, value = ('Carbon dioxide'))
+# ws5 = wb.create_sheet('Prediction variance')
+# ws5.cell(row = 1, column = 1, value = ('Model 1'))
+# ws5.cell(row = 2, column = 1, value = ('Experiment'))
+# ws5.cell(row = 2, column = 2, value = ('Methane'))
+# ws5.cell(row = 2, column = 3, value = ('Oxygen'))
+# ws5.cell(row = 2, column = 4, value = ('Carbon dioxide'))
 
-ws5.cell(row = 1, column = 7, value = ('Model 2'))
-ws5.cell(row = 2, column = 7, value = ('Experiment'))
-ws5.cell(row = 2, column = 8, value = ('Methane'))
-ws5.cell(row = 2, column = 9, value = ('Oxygen'))
-ws5.cell(row = 2, column = 10, value = ('Carbon dioxide'))
+# ws5.cell(row = 1, column = 7, value = ('Model 2'))
+# ws5.cell(row = 2, column = 7, value = ('Experiment'))
+# ws5.cell(row = 2, column = 8, value = ('Methane'))
+# ws5.cell(row = 2, column = 9, value = ('Oxygen'))
+# ws5.cell(row = 2, column = 10, value = ('Carbon dioxide'))
 
-ws5.cell(row = 1, column = 13, value = ('Model 3'))
-ws5.cell(row = 2, column = 13, value = ('Experiment'))
-ws5.cell(row = 2, column = 14, value = ('Methane'))
-ws5.cell(row = 2, column = 15, value = ('Oxygen'))
-ws5.cell(row = 2, column = 16, value = ('Carbon dioxide'))
+# ws5.cell(row = 1, column = 13, value = ('Model 3'))
+# ws5.cell(row = 2, column = 13, value = ('Experiment'))
+# ws5.cell(row = 2, column = 14, value = ('Methane'))
+# ws5.cell(row = 2, column = 15, value = ('Oxygen'))
+# ws5.cell(row = 2, column = 16, value = ('Carbon dioxide'))
 
 
-for i in range(mexp):
-    ws5.cell(row = 3+i, column = 1, value = (i+1))
-    ws5.cell(row = 3+i, column = 2, value = (pred_cov1[:,0][i]))
-    ws5.cell(row = 3+i, column = 3, value = (pred_cov1[:,1][i]))
-    ws5.cell(row = 3+i, column = 4, value = (pred_cov1[:,2][i]))
+# for i in range(mexp):
+#     ws5.cell(row = 3+i, column = 1, value = (i+1))
+#     ws5.cell(row = 3+i, column = 2, value = (pred_cov1[:,0][i]))
+#     ws5.cell(row = 3+i, column = 3, value = (pred_cov1[:,1][i]))
+#     ws5.cell(row = 3+i, column = 4, value = (pred_cov1[:,2][i]))
     
-    ws5.cell(row = 3+i, column = 7, value = (i+1))
-    ws5.cell(row = 3+i, column = 8, value = (pred_cov2[:,0][i]))
-    ws5.cell(row = 3+i, column = 9, value = (pred_cov2[:,1][i]))
-    ws5.cell(row = 3+i, column = 10, value = (pred_cov2[:,2][i]))
+#     ws5.cell(row = 3+i, column = 7, value = (i+1))
+#     ws5.cell(row = 3+i, column = 8, value = (pred_cov2[:,0][i]))
+#     ws5.cell(row = 3+i, column = 9, value = (pred_cov2[:,1][i]))
+#     ws5.cell(row = 3+i, column = 10, value = (pred_cov2[:,2][i]))
     
-    ws5.cell(row = 3+i, column = 13, value = (i+1))
-    ws5.cell(row = 3+i, column = 14, value = (pred_cov3[:,0][i]))
-    ws5.cell(row = 3+i, column = 15, value = (pred_cov3[:,1][i]))
-    ws5.cell(row = 3+i, column = 16, value = (pred_cov3[:,2][i]))
+#     ws5.cell(row = 3+i, column = 13, value = (i+1))
+#     ws5.cell(row = 3+i, column = 14, value = (pred_cov3[:,0][i]))
+#     ws5.cell(row = 3+i, column = 15, value = (pred_cov3[:,1][i]))
+#     ws5.cell(row = 3+i, column = 16, value = (pred_cov3[:,2][i]))
 
-ws6 = wb.create_sheet('distribution m2')
-for i in range(mexp):
-    ws6.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
-    ws6.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
-    ws6.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
+# ws6 = wb.create_sheet('distribution m2')
+# for i in range(mexp):
+#     ws6.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
+#     ws6.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
+#     ws6.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
 
-for i in range(mexp):
-    for j in range(len(plot2[i])):
-        ws6.cell(row = j+2, column = i*4+1, value = (plot2[i][j,0]))
-        ws6.cell(row = j+2, column = i*4+2, value = (plot2[i][j,1]))
-        ws6.cell(row = j+2, column = i*4+3, value = (plot2[i][j,2]))
+# for i in range(mexp):
+#     for j in range(len(plot2[i])):
+#         ws6.cell(row = j+2, column = i*4+1, value = (plot2[i][j,0]))
+#         ws6.cell(row = j+2, column = i*4+2, value = (plot2[i][j,1]))
+#         ws6.cell(row = j+2, column = i*4+3, value = (plot2[i][j,2]))
 
 
-ws7 = wb.create_sheet('distribution m3')
-for i in range(mexp):
-    ws7.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
-    ws7.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
-    ws7.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
+# ws7 = wb.create_sheet('distribution m3')
+# for i in range(mexp):
+#     ws7.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
+#     ws7.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
+#     ws7.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
 
-for i in range(mexp):
-    for j in range(len(plot2[i])):
-        ws7.cell(row = j+2, column = i*4+1, value = (plot3[i][j,0]))
-        ws7.cell(row = j+2, column = i*4+2, value = (plot3[i][j,1]))
-        ws7.cell(row = j+2, column = i*4+3, value = (plot3[i][j,2]))
+# for i in range(mexp):
+#     for j in range(len(plot2[i])):
+#         ws7.cell(row = j+2, column = i*4+1, value = (plot3[i][j,0]))
+#         ws7.cell(row = j+2, column = i*4+2, value = (plot3[i][j,1]))
+#         ws7.cell(row = j+2, column = i*4+3, value = (plot3[i][j,2]))
         
-ws8 = wb.create_sheet('distribution m2_2')
-for i in range(mexp):
-    ws8.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
-    ws8.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
-    ws8.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
+# ws8 = wb.create_sheet('distribution m2_2')
+# for i in range(mexp):
+#     ws8.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
+#     ws8.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
+#     ws8.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
 
-for i in range(mexp):
-    for j in range(len(plot5[i])):
-        ws8.cell(row = j+2, column = i*4+1, value = (plot5[i][j,0]))
-        ws8.cell(row = j+2, column = i*4+2, value = (plot5[i][j,1]))
-        ws8.cell(row = j+2, column = i*4+3, value = (plot5[i][j,2]))
-
-
-ws9 = wb.create_sheet('distribution m3_2')
-for i in range(mexp):
-    ws9.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
-    ws9.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
-    ws9.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
-
-for i in range(mexp):
-    for j in range(len(plot4[i])):
-        ws9.cell(row = j+2, column = i*4+1, value = (plot4[i][j,0]))
-        ws9.cell(row = j+2, column = i*4+2, value = (plot4[i][j,1]))
-        ws9.cell(row = j+2, column = i*4+3, value = (plot4[i][j,2]))
-wb.save('CH4oxidretronew_newresults_factorialplus8.xlsx')
+# for i in range(mexp):
+#     for j in range(len(plot5[i])):
+#         ws8.cell(row = j+2, column = i*4+1, value = (plot5[i][j,0]))
+#         ws8.cell(row = j+2, column = i*4+2, value = (plot5[i][j,1]))
+#         ws8.cell(row = j+2, column = i*4+3, value = (plot5[i][j,2]))
 
 
-# n_dexp = 1
+# ws9 = wb.create_sheet('distribution m3_2')
+# for i in range(mexp):
+#     ws9.cell(row = 1, column = i*4+1, value = ('%s %d' % ('y1', i+1)))
+#     ws9.cell(row = 1, column = i*4+2, value = ('%s %d' % ('y2', i+1)))
+#     ws9.cell(row = 1, column = i*4+3, value = ('%s %d' % ('y3', i+1)))
+
+# for i in range(mexp):
+#     for j in range(len(plot4[i])):
+#         ws9.cell(row = j+2, column = i*4+1, value = (plot4[i][j,0]))
+#         ws9.cell(row = j+2, column = i*4+2, value = (plot4[i][j,1]))
+#         ws9.cell(row = j+2, column = i*4+3, value = (plot4[i][j,2]))
+# wb.save('CH4oxidretronew_newresults_factorialplus8_review_check.xlsx')
+
+
+#######################################################################
+
+n_dexp = 1
 
 # # MBDoE for model discrimination (between model 2 and 3)
 # ig_md1, b_md1 = initialisation1_mbdoemd_BF(y_meas,km2,km3,est_m2,est_m3,FIM2_obs[-1],FIM3_obs[-1],Pi[-1],n_dexp,n_u)#,prng)
@@ -578,4 +627,21 @@ wb.save('CH4oxidretronew_newresults_factorialplus8.xlsx')
 # ig_pp0, b_pp0 = initialisation0_mbdoepp(y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_u,prng)
 # sol_pp1 = minimize(mbdoepp, ig_pp1, method = 'SLSQP', bounds = (b_pp1), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_phi))
 # sol_pp0 = minimize(mbdoepp, ig_pp0, method = 'SLSQP', bounds = (b_pp0), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_phi))    
-    
+
+
+# MBDoE for parameter precision of model 3
+# ig_pp1, b_pp1 = initialisation1_mbdoepp(y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_u)#,prng)
+# ig_pp0, b_pp0 = initialisation0_mbdoepp(y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_u,prng)
+# sol_pp1 = minimize(mbdoepp, [ig_pp1] * 3, method = 'SLSQP', bounds = (b_pp1 * 3), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],3,n_phi))
+# sol_pp0 = minimize(mbdoepp, [ig_pp0] * 3, method = 'SLSQP', bounds = (b_pp0 * 3), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],3,n_phi))    
+
+# nd1 = sol_pp1.x
+# nd2 = sol_pp0.x
+# u_p1 = np.vstack((u_p, np.append(nd1,[1.27])))
+# u_p2 = np.vstack((u_p, np.append(nd2,[1.27])))
+# newFIM1 = obs_FIM(u_p1,y_meas,km3,est_m3,Pi[-1])
+# newFIM2 = obs_FIM(u_p2,y_meas,km3,est_m3,Pi[-1])
+# newCOV1 = np.linalg.inv(newFIM1)
+# newCOV2 = np.linalg.inv(newFIM2)
+# newCI1 = tvalue_fun(est_m3,newCOV1,dof3[-1])[0]
+# newCI2 = tvalue_fun(est_m3,newCOV2,dof3[-1])[0]
