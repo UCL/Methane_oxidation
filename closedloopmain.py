@@ -15,6 +15,32 @@ import pyomo.environ as py
 import pyomo.dae as pyd
 
 def pdrop(x,L,u,As,Dp,eps,mu):
+    """
+    A function to describe pressure drop in the reactor
+
+    Parameters
+    ----------
+    x : list[float]
+        Differential state variable.
+    L : float
+        Reactor bed length.
+    u : list[float]
+        Process conditions.
+    As : TYPE
+        DESCRIPTION.
+    Dp : TYPE
+        DESCRIPTION.
+    eps : TYPE
+        DESCRIPTION.
+    mu : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    dPdz : TYPE
+        DESCRIPTION.
+
+    """
     T0, P0, rho0 = 20.0, 1.0, 1.2
     P = x[0]
     dPdz = -1.0*(((150.0*mu*(u[1]*(1e-6/60.0)*(P0*1e5/P)*((u[0]+273.15)/(T0+273.15)))*((1-eps)**2))/((Dp**2)*As*(eps**3))) + 
@@ -22,8 +48,28 @@ def pdrop(x,L,u,As,Dp,eps,mu):
     return dPdz
 
 def MLE_pd(c_theta,u_p,Pin_meas,sigma_P):
-    T0, P0, rho0 = 20.0, 1.0, 1.2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    """
+    Maximum likelihood estimation (MLE) objective function to estimate c_theta
+
+    Parameters
+    ----------
+    c_theta : TYPE
+        DESCRIPTION.
+    u_p : TYPE
+        DESCRIPTION.
+    Pin_meas : TYPE
+        DESCRIPTION.
+    sigma_P : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    MLE : TYPE
+        DESCRIPTION.
+
+    """
+    T0, P0 = 20.0, 1.0
+    As, Dp, eps, mu, L = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015
     n_exp = np.shape(u_p)[0]
     Pin = []
     Pin_c = []
@@ -37,16 +83,63 @@ def MLE_pd(c_theta,u_p,Pin_meas,sigma_P):
     return MLE
 
 def Pinmodel(u,c_theta_hat):
-    T0, P0, rho0 = 20.0, 1.0, 1.2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    """
+    Function to obtain inlet pressure by simulating pressure drop model
+    at MLE
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    c_theta_hat : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    Pin_c_hat : TYPE
+        DESCRIPTION.
+
+    """
+    T0, P0 = 20.0, 1.0
+    As, Dp, eps, mu, L = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015
     x0 = u[4]*1e5
     t = np.linspace(L,0.0,5)
     Pin = odeint(pdrop,x0,t,args=(u,As,Dp,eps,mu))
     Pin_c_hat = Pin[-1]*1e-5 + c_theta_hat * (u[1]*(P0*1e5/Pin[-1])*((u[0]+273.15)/(T0+273.15)))
     return Pin_c_hat
 
-def km1(x,t,u,theta,Pavg): # power law
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+def PinmodelErgun(u,c_theta_hat):
+    As, Dp, eps, mu, L = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015
+    x0 = u[4]*1e5
+    t = np.linspace(L,0.0,5)
+    Pin = odeint(pdrop,x0,t,args=(u,As,Dp,eps,mu))
+    Pin_c_hat = Pin[-1]*1e-5
+    return Pin_c_hat
+
+def km1(x,t,u,theta,Pavg):
+    """
+    Power law model
+
+    Parameters
+    ----------
+    x : TYPE
+        DESCRIPTION.
+    t : TYPE
+        DESCRIPTION.
+    u : TYPE
+        DESCRIPTION.
+    theta : TYPE
+        DESCRIPTION.
+    Pavg : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    list
+        DESCRIPTION.
+
+    """
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     yCH4 = x[0]
     yO2 = x[1]
@@ -61,8 +154,30 @@ def km1(x,t,u,theta,Pavg): # power law
     dyH2Odw = 2.0*(r1) * cf
     return [dyCH4dw, dyO2dw, dyCO2dw, dyH2Odw]
         
-def km2(x,t,u,theta,Pavg): # LHHW dissociative
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+def km2(x,t,u,theta,Pavg):
+    """
+    LHHW dissociative
+
+    Parameters
+    ----------
+    x : TYPE
+        DESCRIPTION.
+    t : TYPE
+        DESCRIPTION.
+    u : TYPE
+        DESCRIPTION.
+    theta : TYPE
+        DESCRIPTION.
+    Pavg : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    list
+        DESCRIPTION.
+
+    """
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     yCH4 = x[0]
     yO2 = x[1]
@@ -79,27 +194,31 @@ def km2(x,t,u,theta,Pavg): # LHHW dissociative
     dyH2Odw = 2.0*(r1) * cf
     return [dyCH4dw, dyO2dw, dyCO2dw, dyH2Odw]
 
-def km2r(x,t,u,theta,Pavg): # LHHW dissociative reduced
-    T0, P0, rho0 = 20.0, 1.0, 1.2
-    R, Tref = 8.314, 320
-    yCH4 = x[0]
-    yO2 = x[1]
-    yCO2 = x[2]
-    yH2O = x[3]
-    k1 = math.exp(-theta[0] - (theta[1]*1e4/R) * ((1/(u[0]+273.15))-(1/(Tref+273.15))))
-    k2 = math.exp(theta[2] - (-theta[3]*1e4/R) * ((1/(u[0]+273.15))-(1/(Tref+273.15))))
-    k3 = math.exp(theta[4] - (0.0*1e4/R) * ((1/(u[0]+273.15))-(1/(Tref+273.15))))
-    r1 = (k1 * k3 * (Pavg * yCH4) * ((k2 * Pavg * yO2)**0.5))/((1 + (k3*Pavg*yCH4) + ((k2*Pavg*yO2)**0.5))**2)
-    cf = ((R*(u[0]+273.15))/(Pavg*1e5*(u[1]*(1e-6/60)*(P0/Pavg)*((u[0]+273.15)/(T0+273.15)))))
-    dyCH4dw = (-r1) * cf
-    dyO2dw = 2.0*(-r1) * cf
-    dyCO2dw = (r1) * cf
-    dyH2Odw = 2.0*(r1) * cf
-    return [dyCH4dw, dyO2dw, dyCO2dw, dyH2Odw]
 
+def km3(x,t,u,theta,Pavg):
+    """
+    MVK molecular
 
-def km3(x,t,u,theta,Pavg): # MVK molecular
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+    Parameters
+    ----------
+    x : TYPE
+        DESCRIPTION.
+    t : TYPE
+        DESCRIPTION.
+    u : TYPE
+        DESCRIPTION.
+    theta : TYPE
+        DESCRIPTION.
+    Pavg : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    list
+        DESCRIPTION.
+
+    """
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     yCH4 = x[0]
     yO2 = x[1]
@@ -121,9 +240,30 @@ General parameter estimation (regardless of the model)
 '''
 
 def mle_fun(theta,u,y,model,pdtheta):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6, 0.40, 2.93e-5, 0.015, 0.01
+    """
+    MLE objective function to estimate kinetic model parameters
+
+    Parameters
+    ----------
+    theta : TYPE
+        DESCRIPTION.
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    MLE : TYPE
+        DESCRIPTION.
+
+    """
+    mc = 0.01
     sigma = [0.00043, 0.00202, 0.00051]
-    n_exp = np.shape(u)[0]
     n_ymeas = np.shape(y)[1]
     y_hat = []
     MLE = 0
@@ -138,7 +278,7 @@ def mle_fun(theta,u,y,model,pdtheta):
 
 
 def insilicodatagenerator(truetheta,u,y,model,truepdtheta):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6, 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     sigma = [0.00043, 0.00202, 0.00051]
     n_ymeas = np.shape(sigma)[0]
     x0 = [u[2],u[2]*u[3],0.0,0.0000000001]
@@ -147,7 +287,7 @@ def insilicodatagenerator(truetheta,u,y,model,truepdtheta):
     return y_hat
 
 def insilico_exp(u,truetheta,model,truepdtheta,y_cov):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     x0 = [u[2],u[2]*u[3],0.0,0.0000000001]
     t = np.linspace(0.0,mc,5)
     yhat = odeint(model,x0,t,args=(u,truetheta,(Pinmodel(u,truepdtheta)[0] + u[4])/2))[-1][:np.shape(y_cov)[0]]
@@ -156,7 +296,7 @@ def insilico_exp(u,truetheta,model,truepdtheta,y_cov):
     return y[0]
 
 def residual(u,theta,model,y_meas,pdtheta):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     y_hat = []
     for i in range(np.shape(u)[0]):
         x0 = [u[i][2],u[i][2]*u[i][3],0.0,0.0000000001]
@@ -175,8 +315,31 @@ def residual(u,theta,model,y_meas,pdtheta):
     return resid, n_residual, yhat
 
 def sen_fun(u,y,model,theta,pdtheta):
+    """
+    Function to calculate steady state sensitivities
+    based on finite difference
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    theta : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
     epsilon = 0.001
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     p_matrix = np.zeros([np.shape(theta)[0]+1,np.shape(theta)[0]])
     for i in range(np.shape(theta)[0]+1):
         p_matrix[i] = theta
@@ -193,9 +356,32 @@ def sen_fun(u,y,model,theta,pdtheta):
     return np.transpose(s_matrix)
 
 def FIM_fun(u,y,model,theta,pdtheta):
+    """
+    A function to calculate Fisher information matrix
+    from parameter sensitivities
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    theta : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    FIM_matrix : TYPE
+        DESCRIPTION.
+
+    """
     epsilon = 0.001
     sigma = [0.00043, 0.00202, 0.00051]
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     p_matrix = np.zeros([np.shape(theta)[0]+1,np.shape(theta)[0]])
     for i in range(np.shape(theta)[0]+1):
         p_matrix[i] = theta
@@ -216,6 +402,29 @@ def FIM_fun(u,y,model,theta,pdtheta):
 
 
 def obs_FIM(up,y,model,pe,pdpe):
+    """
+    A function to calculate observed Fisher information matrix
+    This corresponds to FIM computed based on measured 
+
+    Parameters
+    ----------
+    up : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pe : TYPE
+        DESCRIPTION.
+    pdpe : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    obsFIM : TYPE
+        DESCRIPTION.
+
+    """
     obsFIM = np.zeros([np.shape(pe)[0],np.shape(pe)[0]])
     for i in range(np.shape(up)[0]):
         obsFIM += FIM_fun(up[i],y,model,pe,pdpe)
@@ -223,6 +432,20 @@ def obs_FIM(up,y,model,pe,pdpe):
 
 
 def obs_COR(obscov):
+    """
+    A function to calculate observed correlation matrix
+
+    Parameters
+    ----------
+    obscov : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    obsCOR : TYPE
+        DESCRIPTION.
+
+    """
     obsCOR = np.zeros([np.shape(obscov)[0],np.shape(obscov)[0]])
     for i in range(np.shape(obscov)[0]):
         for j in range(np.shape(obscov)[0]):
@@ -230,6 +453,27 @@ def obs_COR(obscov):
     return obsCOR
 
 def tvalue_fun(pe,obscov,dof):
+    """
+    A function to perform t test to evaluate statistical precision
+    of kinetic model parameter estimates
+
+    Parameters
+    ----------
+    pe : TYPE
+        DESCRIPTION.
+    obscov : TYPE
+        DESCRIPTION.
+    dof : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    conf_interval : TYPE
+        DESCRIPTION.
+    t_value : TYPE
+        DESCRIPTION.
+
+    """
     alpha = 0.05
     conf_level = 1.0 - alpha
     conf_interval = np.zeros(np.shape(obscov)[0])
@@ -240,6 +484,25 @@ def tvalue_fun(pe,obscov,dof):
     return conf_interval, t_value
     
 def mprob1(chisq,dof):
+    """
+    A function to calculate probability of model correctness
+    from the p values of chi-square test
+
+    Parameters
+    ----------
+    chisq : TYPE
+        DESCRIPTION.
+    dof : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    probability1 : TYPE
+        DESCRIPTION.
+    probability2 : TYPE
+        DESCRIPTION.
+
+    """
     n_models = np.shape(chisq)[0]
     p_value = []
     sf_value = []
@@ -254,6 +517,23 @@ def mprob1(chisq,dof):
     return probability1, probability2
 
 def mprob2(chisq,dof):
+    """
+    A function to calculate probability of model correctness
+    using inverse chisquare values
+
+    Parameters
+    ----------
+    chisq : TYPE
+        DESCRIPTION.
+    dof : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    probability : TYPE
+        DESCRIPTION.
+
+    """
     n_models = np.shape(chisq)[0]
     inv_chisq = []
     probability = []
@@ -264,11 +544,30 @@ def mprob2(chisq,dof):
     return probability
 
 def confidence_ellipsoid31(est,cov,significance):
+    # TODO: Write a general function to obtain confidence ellipse
+    # TODO: for the critical parameters pair
+    """
+    A function to obtain confidence ellipse for the kinetic model 
+    parameter pair indexed (3,1), given the covariance of model parameters
+
+    Parameters
+    ----------
+    est : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+    significance : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    x_coordinate : TYPE
+        DESCRIPTION.
+    y_coordinate : TYPE
+        DESCRIPTION.
+
+    """
     redcov = np.zeros([2,2])
-#    redcov[0,0] = cov[np.argsort(tval)[0],np.argsort(tval)[0]]
-#    redcov[0,1] = cov[np.argsort(tval)[0],np.argsort(tval)[1]]
-#    redcov[1,0] = cov[np.argsort(tval)[1],np.argsort(tval)[0]]
-#    redcov[1,1] = cov[np.argsort(tval)[1],np.argsort(tval)[1]]
     
     redcov[0,0] = cov[3,3]
     redcov[0,1] = cov[3,1]
@@ -298,11 +597,30 @@ def confidence_ellipsoid31(est,cov,significance):
 
 
 def confidence_ellipsoid32(est,cov,significance):
+    # TODO: Write a general function to obtain confidence ellipse
+    # TODO: for the critical parameters pair
+    """
+    A function to obtain confidence ellipse for the kinetic model 
+    parameter pair indexed (3,2), given the covariance of model parameters
+
+    Parameters
+    ----------
+    est : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+    significance : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    x_coordinate : TYPE
+        DESCRIPTION.
+    y_coordinate : TYPE
+        DESCRIPTION.
+
+    """
     redcov = np.zeros([2,2])
-#    redcov[0,0] = cov[np.argsort(tval)[0],np.argsort(tval)[0]]
-#    redcov[0,1] = cov[np.argsort(tval)[0],np.argsort(tval)[1]]
-#    redcov[1,0] = cov[np.argsort(tval)[1],np.argsort(tval)[0]]
-#    redcov[1,1] = cov[np.argsort(tval)[1],np.argsort(tval)[1]]
     
     redcov[0,0] = cov[3,3]
     redcov[0,1] = cov[3,2]
@@ -331,6 +649,27 @@ def confidence_ellipsoid32(est,cov,significance):
     return x_coordinate, y_coordinate
 
 def confidence_ellipsoid1(est,cov,significance):
+    """
+    A function to obtain confidence ellipse of a two parameter model
+    given the covariance matrix of model parameters
+
+    Parameters
+    ----------
+    est : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+    significance : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    x_coordinate : TYPE
+        DESCRIPTION.
+    y_coordinate : TYPE
+        DESCRIPTION.
+
+    """
     eigenvalues,eigenvectors = np.linalg.eig(cov)
     a = np.sqrt(eigenvalues)[0]                 # major axis
     b = np.sqrt(eigenvalues)[1]                 # minor axis
@@ -353,11 +692,40 @@ def confidence_ellipsoid1(est,cov,significance):
     return x_coordinate, y_coordinate
 
 def pred_error(u,y,model,estimate,cov,pdtheta,df):
+    """
+    A function to evaluate model prediction error
+    given the covariance of model parameters
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    estimate : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    df : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    y_hat : TYPE
+        DESCRIPTION.
+    obs_perror : TYPE
+        DESCRIPTION.
+
+    """
     sigma = [0.00043, 0.00202, 0.00051]
     mcov = np.identity(np.shape(y)[1])
     for i in range(np.shape(y)[1]):
         mcov[i,i] = sigma[i]**2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     n_ymeas = np.shape(y)[1]
     alpha = 0.05
     t = np.linspace(0.0,mc,5)
@@ -376,7 +744,30 @@ def pred_error(u,y,model,estimate,cov,pdtheta,df):
 
 
 def distributionplot1(u,estimate,model,pdtheta,errorbar):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    """
+    A function to obtain prediction density plots showing the uncertainty of
+    model predictions (based on sampling)
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    estimate : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    errorbar : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    yhat : TYPE
+        DESCRIPTION.
+
+    """
+    mc = 0.01
     y_hat = []
     est1_b = np.linspace(estimate[0] - errorbar[0],estimate[0] + errorbar[0],num=5)
     est2_b = np.linspace(estimate[1] - errorbar[1],estimate[1] + errorbar[1],num=5)
@@ -411,11 +802,36 @@ def distributionplot1(u,estimate,model,pdtheta,errorbar):
     return yhat
 
 def distributionplot2(u,y,model,estimate,cov,pdtheta):
+    """
+    A function to obtain prediction density plots showing the uncertainty of
+    model predictions (based on a gaussian prior on model predictions)
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    estimate : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    error : TYPE
+        DESCRIPTION.
+
+    """
     sigma = [0.00043, 0.00202, 0.00051]
     mcov = np.identity(np.shape(y)[1])
     for i in range(np.shape(y)[1]):
         mcov[i,i] = sigma[i]**2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     n_ymeas = np.shape(y)[1]
     alpha = 0.05
     t = np.linspace(0.0,mc,5)
@@ -431,7 +847,30 @@ def distributionplot2(u,y,model,estimate,cov,pdtheta):
     return error
 
 def distributionplot3(u,estimate,model,pdtheta,cov):
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    """
+    A function to obtain prediction density plots showing the uncertainty of
+    model predictions (based on a gaussian prior on model parameters)
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    estimate : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    cov : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    yhat : TYPE
+        DESCRIPTION.
+
+    """
+    mc = 0.01
     y_hat = []
     thetasample = np.random.multivariate_normal(estimate,cov,500)
     for i in range(np.shape(thetasample)[0]):
@@ -445,11 +884,48 @@ def distributionplot3(u,estimate,model,pdtheta,cov):
     return yhat
 
 def initialisation0_mbdoemd_BF(y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_u,prng):
+    """
+    A function to find a good starting point for MBDoE for model discrimination
+    based on LHS sampling
+
+    Parameters
+    ----------
+    y : TYPE
+        DESCRIPTION.
+    m2 : TYPE
+        DESCRIPTION.
+    m3 : TYPE
+        DESCRIPTION.
+    pe2 : TYPE
+        DESCRIPTION.
+    pe3 : TYPE
+        DESCRIPTION.
+    p2 : TYPE
+        DESCRIPTION.
+    p3 : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_u : TYPE
+        DESCRIPTION.
+    prng : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+    TYPE
+        DESCRIPTION.
+
+    """
     sigma = [0.00043, 0.00202, 0.00051]
     mcov = np.identity(np.shape(y)[1])
     for i in range(np.shape(y)[1]):
         mcov[i,i] = sigma[i]**2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     control_bounds = [[250.0,350.0],[20.0,30.0],[0.005,0.025],[2.0,4.0],[1.3,1.3]]
     n_samples = 500
     n_resamples = 250
@@ -548,12 +1024,44 @@ def initialisation0_mbdoemd_BF(y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_u,prng):
         x0 = np.append(x0,[lhs_ranking[i]])
     return x0[0:-1], control_bounds[0:-1] * n_dexp   
 
-def initialisation1_mbdoemd_BF(y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_u):#,prng):
+def initialisation1_mbdoemd_BF(y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_u):
+    """
+    A function to find a good starting point for MBDoE for model discrimination
+    based on full factorial sampling
+
+    Parameters
+    ----------
+    y : TYPE
+        DESCRIPTION.
+    m2 : TYPE
+        DESCRIPTION.
+    m3 : TYPE
+        DESCRIPTION.
+    pe2 : TYPE
+        DESCRIPTION.
+    pe3 : TYPE
+        DESCRIPTION.
+    p2 : TYPE
+        DESCRIPTION.
+    p3 : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_u : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     sigma = [0.00043, 0.00202, 0.00051]
     mcov = np.identity(np.shape(y)[1])
     for i in range(np.shape(y)[1]):
         mcov[i,i] = sigma[i]**2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     control_bounds = [[250.0,350.0],[20.0,30.0],[0.005,0.025],[2.0,4.0],[1.3,1.3]]
     n_levels = 4
     ff_points = fullfact([n_levels,n_levels,n_levels,n_levels])
@@ -606,12 +1114,48 @@ def initialisation1_mbdoemd_BF(y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_u):#,prng)
     return ff_ranking[0:-1], control_bounds[0:-1] * n_dexp
 
 
-def mbdoemd_BF(u,y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_phi): # BuzziFerraris-Forzatti criterion
+def mbdoemd_BF(u,y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_phi):
+    # SEE: BuzziFerraris-Forzatti criterion
+    """
+    Objective function for MBDoE for model discrimination between two models
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    m2 : TYPE
+        DESCRIPTION.
+    m3 : TYPE
+        DESCRIPTION.
+    pe2 : TYPE
+        DESCRIPTION.
+    pe3 : TYPE
+        DESCRIPTION.
+    p2 : TYPE
+        DESCRIPTION.
+    p3 : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_phi : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+
     sigma = [0.00043, 0.00202, 0.00051]
     mcov = np.identity(np.shape(y)[1])
     for i in range(np.shape(y)[1]):
         mcov[i,i] = sigma[i]**2
-    As, Dp, eps, mu, L, mc = 840e-9, 69e-6 , 0.40, 2.93e-5, 0.015, 0.01
+    mc = 0.01
     n_ymeas = np.shape(y)[1]
     y_hat_m2 = []
     y_hat_m3 = []
@@ -647,6 +1191,34 @@ def mbdoemd_BF(u,y,m2,m3,pe2,pe3,p2,p3,pdtheta,n_dexp,n_phi): # BuzziFerraris-Fo
     return -1.0 * (dc23)
 
 def initialisation0_mbdoepp(y,model,pe,prior,pdtheta,n_dexp,n_phi,prng):
+    """
+    A function to find good starting point for MBDoE for parameter precision
+    based on LHS sampling
+
+    Parameters
+    ----------
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pe : TYPE
+        DESCRIPTION.
+    prior : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_phi : TYPE
+        DESCRIPTION.
+    prng : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     control_bounds = [[250.0,350.0],[20.0,30.0],[0.005,0.025],[2.0,4.0],[1.3,1.3]]
     n_samples = 500
     n_resamples = 250
@@ -685,32 +1257,41 @@ def initialisation0_mbdoepp(y,model,pe,prior,pdtheta,n_dexp,n_phi,prng):
         FIM_relative_trace[i] = np.trace(FIM_resamples[i]) / np.trace(FIM_sample)
         FIM_relative_eigv[i] = min(np.linalg.eigvals(FIM_resamples[i])) / min(np.linalg.eigvals(FIM_sample))
     lhs_ranking = actual_exp_seq[np.argmax(FIM_relative_det)]
-#    lhs_ranking = actual_exp_seq[np.argmax(FIM_relative_trace)]
-#    lhs_ranking = actual_exp_seq[np.argmax(FIM_relative_eigv)]
-    
-    # on covariance matrix
-#    COV_relative_det = np.zeros(n_resamples)
-#    COV_relative_trace = np.zeros(n_resamples)
-#    COV_relative_eigv = np.zeros(n_resamples)
-#    for i in range(n_resamples):
-#        COV_relative_det[i] = 2 * sum(np.log(np.diag(np.linalg.cholesky(np.linalg.inv(FIM_resamples[i]))))) / 2 * sum(np.log(np.diag(np.linalg.cholesky(np.linalg.inv(FIM_sample)))))
-#        COV_relative_trace[i] = np.trace(np.linalg.inv(FIM_resamples[i])) / np.trace(np.linalg.inv(FIM_sample))
-#        COV_relative_eigv[i] = max(np.linalg.eigvals(np.linalg.inv(FIM_resamples[i]))) / max(np.linalg.eigvals(np.linalg.inv(FIM_sample)))
-#    lhs_ranking1 = actual_exp_seq[np.argmin(COV_relative_det)]
-#    lhs_ranking1 = actual_exp_seq[np.argmin(COV_relative_trace)]
-#    lhs_ranking1 = actual_exp_seq[np.argmin(COV_relative_eigv)]
     
     
     x0 = lhs_ranking[0]
     for i in range(1,n_dexp):
         x0 = np.append(x0,[lhs_ranking[i]])
         
-#    x01 = lhs_ranking1[0]
-#    for i in range(1,n_dexp):
-#        x01 = np.append(x01,[lhs_ranking1[i]])
     return x0[0:-1], control_bounds[0:-1] * n_dexp#, x01
 
-def initialisation1_mbdoepp(y,model,pe,prior,pdtheta,n_dexp,n_u):#,prng):
+def initialisation1_mbdoepp(y,model,pe,prior,pdtheta,n_dexp,n_u):
+    """
+    A function to find good starting point for MBDoE for parameter precision
+    based on full factorial sampling
+
+    Parameters
+    ----------
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pe : TYPE
+        DESCRIPTION.
+    prior : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_u : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     control_bounds = [[250.0,350.0],[20.0,30.0],[0.005,0.025],[2.0,4.0],[1.3,1.3]]
     n_levels = 8
     ff_points = fullfact([n_levels,n_levels,n_levels,n_levels])
@@ -745,13 +1326,40 @@ def initialisation1_mbdoepp(y,model,pe,prior,pdtheta,n_dexp,n_u):#,prng):
     return ff_ranking[0:-1], control_bounds[0:-1] * n_dexp
 
 
-# for the full likelihood
+
 def mbdoepp(u,y,model,pe,prior,pdtheta,n_dexp,n_phi):
+    """
+    Objective function for MBDoE for parameter precision
+
+    Parameters
+    ----------
+    u : TYPE
+        DESCRIPTION.
+    y : TYPE
+        DESCRIPTION.
+    model : TYPE
+        DESCRIPTION.
+    pe : TYPE
+        DESCRIPTION.
+    prior : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    n_dexp : TYPE
+        DESCRIPTION.
+    n_phi : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     exp_FIM = np.zeros([np.shape(pe)[0],np.shape(pe)[0]])
     exp_FIM += prior # adding prior
     for j in range(n_dexp):
         #u[(j+1)*(n_phi-1)+j] = 1.3
-        exp_FIM += FIM_fun(np.hstack((u[j*n_phi:(j+1)*n_phi],np.array([1.3]))), y, model, pe, pdtheta)
+        exp_FIM += FIM_fun(np.hstack((u[j*n_phi:(j+1)*n_phi],np.array([1.27]))), y, model, pe, pdtheta)
     exp_cov = np.linalg.inv(exp_FIM)
     # return -math.log(min(np.linalg.eigvals(exp_FIM)))
 #    return math. log(np.trace(exp_cov))
@@ -760,7 +1368,22 @@ def mbdoepp(u,y,model,pe,prior,pdtheta,n_dexp,n_phi):
 
     
 
-def tdomain(tarray): # for defining the finite element points which include all sampling times
+def tdomain(tarray):
+    """
+    A function to define the finite element points
+    which include all sampling times
+
+    Parameters
+    ----------
+    tarray : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    tk : TYPE
+        DESCRIPTION.
+
+    """
     td = []
     for i in range(np.shape(tarray)[0]):
         td += list(tarray[i])
@@ -768,7 +1391,22 @@ def tdomain(tarray): # for defining the finite element points which include all 
     tk[0] = 0
     return tk
 
-def xmeas(tarray, yarray): # for defining the sampling times and measurements
+def xmeas(tarray, yarray):
+    """
+    A function to define the sampling times and measurements
+
+    Parameters
+    ----------
+    tarray : TYPE
+        DESCRIPTION.
+    yarray : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     idx = list()
     for i in list(range(np.shape(tarray)[0])):
         for j in tarray[i]:
@@ -790,7 +1428,23 @@ def xmeas(tarray, yarray): # for defining the sampling times and measurements
 #    dic_x4 = {idx[i]:val_x4[i] for i in range(np.shape(val_x4)[0])}
     return idx, dic_x1, dic_x2, dic_x3#, dic_x4
 
-def controls(uarray): # for defining the controls
+def controls(uarray):
+    """
+    A function to define the controls
+
+    Parameters
+    ----------
+    uarray : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    idx : TYPE
+        DESCRIPTION.
+    dic : TYPE
+        DESCRIPTION.
+
+    """
     idx = list()
     for i in list(range(np.shape(uarray)[0])):
         for j in list(range(np.shape(uarray)[1])):
@@ -803,7 +1457,23 @@ def controls(uarray): # for defining the controls
     dic = {idx[i]:val[i] for i in range(np.shape(val)[0])}
     return idx, dic
 
-def pcontrols(uarray,ptheta): # for defining the controls
+def pcontrols(uarray,ptheta):
+    """
+    A function to define the pressure controls
+
+    Parameters
+    ----------
+    uarray : TYPE
+        DESCRIPTION.
+    ptheta : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    dic : TYPE
+        DESCRIPTION.
+
+    """
     idx = list(range(np.shape(uarray)[0]))
     val = []
     for i in range(np.shape(uarray)[0]):
@@ -811,7 +1481,24 @@ def pcontrols(uarray,ptheta): # for defining the controls
     dic = {idx[i]:val[i] for i in range(np.shape(val)[0])}
     return dic
 
-def discdom(T, N, scheme_name): # time discretization
+def discdom(T, N, scheme_name):
+    """
+    A function for time discretization
+
+    Parameters
+    ----------
+    T : TYPE
+        DESCRIPTION.
+    N : TYPE
+        DESCRIPTION.
+    scheme_name : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     model = py.ConcreteModel()
 #    ft = int(T)
     ft = (T)
@@ -832,9 +1519,34 @@ def discdom(T, N, scheme_name): # time discretization
 ##### Pyomo models #####
 
 
-def optikm1(u_array, y_array, t_array, pdtheta, ig, lb, ub): # power law
+def optikm1(u_array, y_array, t_array, pdtheta, ig, lb, ub):
+    """
+    Pyomo model for power law kinetics
+
+    Parameters
+    ----------
+    u_array : TYPE
+        DESCRIPTION.
+    y_array : TYPE
+        DESCRIPTION.
+    t_array : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    ig : TYPE
+        DESCRIPTION.
+    lb : TYPE
+        DESCRIPTION.
+    ub : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     y_idx, x1m, x2m, x3m = xmeas(t_array, y_array)
     tsp = tdomain(t_array)
@@ -954,9 +1666,34 @@ def optikm1(u_array, y_array, t_array, pdtheta, ig, lb, ub): # power law
     return model
 
 
-def optikm2(u_array, y_array, t_array, pdtheta, ig, lb, ub): # LHHW dissociative
+def optikm2(u_array, y_array, t_array, pdtheta, ig, lb, ub):
+    """
+    Pyomo model for LHHW dissociative kinetics
+
+    Parameters
+    ----------
+    u_array : TYPE
+        DESCRIPTION.
+    y_array : TYPE
+        DESCRIPTION.
+    t_array : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    ig : TYPE
+        DESCRIPTION.
+    lb : TYPE
+        DESCRIPTION.
+    ub : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
     
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     y_idx, x1m, x2m, x3m = xmeas(t_array, y_array)
     tsp = tdomain(t_array)
@@ -1104,159 +1841,34 @@ def optikm2(u_array, y_array, t_array, pdtheta, ig, lb, ub): # LHHW dissociative
     
     return model
 
-def optikm2r(u_array, y_array, t_array, pdtheta, ig, lb, ub): # LHHW dissociative
-    
-    T0, P0, rho0 = 20.0, 1.0, 1.2
-    R, Tref = 8.314, 320
-    y_idx, x1m, x2m, x3m = xmeas(t_array, y_array)
-    tsp = tdomain(t_array)
-    u_idx, up = controls(u_array)
-    Pin = pcontrols(u_array, pdtheta)
-    sigma = [0.00043, 0.00202, 0.00051]
-    d = 4
-#    scheme_name = 'LAGRANGE-LEGENDRE'
-    scheme_name = 'LAGRANGE-RADAU'
-    
-    model = py.ConcreteModel()
-    model.t = pyd.ContinuousSet(initialize = tsp)
-    model.N = py.Set(initialize = list(range(np.shape(u_array)[0])))
-    model.x1meas = py.Param(y_idx, initialize = x1m)
-    model.x2meas = py.Param(y_idx, initialize = x2m)
-    model.x3meas = py.Param(y_idx, initialize = x3m)
-#    model.x4meas = py.Param(y_idx, initialize = x4m)
-    model.u = py.Param(u_idx, initialize = up)
-    model.P = py.Param(model.N, initialize = Pin)
-    
-    model.theta_idx = py.Set(initialize = list(range(np.shape(ig)[0])))
-    theta_lb_dict = dict(list(enumerate(lb)))
-    theta_ub_dict = dict(list(enumerate(ub)))
-#    theta_dict = dict(list(enumerate([0.2,0.1])))
-    theta_dict = dict(list(enumerate(ig)))
+def optikm3(u_array, y_array, t_array, pdtheta, ig, lb, ub):
+    """
+    Pyomo model for MVK molecular kinetics
 
-    def parmbounds(model,i):
-        return (theta_lb_dict[i], theta_ub_dict[i])
-    
-    
-    # declare differential variables
-    model.x1 = py.Var(model.N, model.t, within = py.NonNegativeReals, bounds = (0,1))
-    model.x2 = py.Var(model.N, model.t, within = py.NonNegativeReals, bounds = (0,1))
-    model.x3 = py.Var(model.N, model.t, within = py.NonNegativeReals, bounds = (0,1))
-    model.x4 = py.Var(model.N, model.t, within = py.NonNegativeReals, bounds = (0,1))
-    
-    # declare derivatives
-    model.dx1dt = pyd.DerivativeVar(model.x1, wrt = model.t)
-    model.dx2dt = pyd.DerivativeVar(model.x2, wrt = model.t)
-    model.dx3dt = pyd.DerivativeVar(model.x3, wrt = model.t)
-    model.dx4dt = pyd.DerivativeVar(model.x4, wrt = model.t)
-    
-    # declare model parameters
-    model.theta = py.Var(model.theta_idx, initialize = theta_dict, bounds = parmbounds)
-    
-    def diffeqn1(model,n,t):
-        k1 = (py.exp(-model.theta[0] - (model.theta[1] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k2 = (py.exp(model.theta[2] - (-model.theta[3] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k3 = (py.exp(model.theta[4] - (0.0 * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        r1 = ((k1 * k3 * (((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) * \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5)) / \
-               (((1 + (k3 * ((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) + \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5))**2)))
-        cf = ((R*(model.u[n,0]+273.15))/(((model.P[n] + model.u[n,4])/2) * \
-               1e5 * (model.u[n,1]*(1e-6/60)*(P0/((model.P[n] + model.u[n,4])/2))* \
-               ((model.u[n,0]+273.15)/(T0+273.15)))))
-        if model.t == 0:
-            return py.Constraint.Skip
-        return model.dx1dt[n,t] == -(r1) * cf
-    model.x1cons = py.Constraint(model.N, model.t, rule = diffeqn1)
-    
-    def diffeqn2(model,n,t):
-        k1 = (py.exp(-model.theta[0] - (model.theta[1] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k2 = (py.exp(model.theta[2] - (-model.theta[3] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k3 = (py.exp(model.theta[4] - (0.0 * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        r1 = ((k1 * k3 * (((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) * \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5)) / \
-               (((1 + (k3 * ((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) + \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5))**2)))
-        cf = ((R*(model.u[n,0]+273.15))/(((model.P[n] + model.u[n,4])/2) * \
-               1e5 * (model.u[n,1]*(1e-6/60)*(P0/((model.P[n] + model.u[n,4])/2))* \
-               ((model.u[n,0]+273.15)/(T0+273.15)))))
-        if model.t == 0:
-            return py.Constraint.Skip
-        return model.dx2dt[n,t] == -2 * (r1) * cf
-    model.x2cons = py.Constraint(model.N, model.t, rule = diffeqn2)
-    
-    def diffeqn3(model,n,t):
-        k1 = (py.exp(-model.theta[0] - (model.theta[1] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k2 = (py.exp(model.theta[2] - (-model.theta[3] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k3 = (py.exp(model.theta[4] - (0.0 * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        r1 = ((k1 * k3 * (((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) * \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5)) / \
-               (((1 + (k3 * ((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) + \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5))**2)))
-        cf = ((R*(model.u[n,0]+273.15))/(((model.P[n] + model.u[n,4])/2) * \
-               1e5 * (model.u[n,1]*(1e-6/60)*(P0/((model.P[n] + model.u[n,4])/2))* \
-               ((model.u[n,0]+273.15)/(T0+273.15)))))
-        if model.t == 0:
-            return py.Constraint.Skip
-        return model.dx3dt[n,t] == (r1) * cf
-    model.x3cons = py.Constraint(model.N, model.t, rule = diffeqn3)
-    
-    def diffeqn4(model,n,t):
-        k1 = (py.exp(-model.theta[0] - (model.theta[1] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k2 = (py.exp(model.theta[2] - (-model.theta[3] * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        k3 = (py.exp(model.theta[4] - (0.0 * 1e4/R) * \
-               ((1/(model.u[n,0]+273.15))-(1/(Tref+273.15)))))
-        r1 = ((k1 * k3 * (((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) * \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5)) / \
-               (((1 + (k3 * ((model.P[n] + model.u[n,4])/2) * model.x1[n,t]) + \
-               ((k2 * ((((model.P[n] + model.u[n,4])/2) * model.x2[n,t]) + 1e-60))**0.5))**2)))
-        cf = ((R*(model.u[n,0]+273.15))/(((model.P[n] + model.u[n,4])/2) * \
-               1e5 * (model.u[n,1]*(1e-6/60)*(P0/((model.P[n] + model.u[n,4])/2))* \
-               ((model.u[n,0]+273.15)/(T0+273.15)))))
-        if model.t == 0:
-            return py.Constraint.Skip
-        return model.dx4dt[n,t] == 2 * (r1) * cf
-    model.x4cons = py.Constraint(model.N, model.t, rule = diffeqn4)
-    
-    def init_conditions1(model,n):
-        return model.x1[n,0] == py.value(model.u[n,2])
-    def init_conditions2(model,n):
-        return model.x2[n,0] == py.value(model.u[n,2]) * py.value(model.u[n,3])
-    def init_conditions3(model,n):
-        return model.x3[n,0] == 0.0
-    def init_conditions4(model,n):
-        return model.x4[n,0] == 0.0000000001
-    
-    model.init_cond1 = py.Constraint(model.N, rule = init_conditions1)
-    model.init_cond2 = py.Constraint(model.N, rule = init_conditions2)
-    model.init_cond3 = py.Constraint(model.N, rule = init_conditions3)
-    model.init_cond4 = py.Constraint(model.N, rule = init_conditions4)
-    
-    discretizer = py.TransformationFactory('dae.collocation')
-#    discretizer.apply_to(model, wrt = model.t, nfe = total_elements, ncp = 5)
-    discretizer.apply_to(model, wrt = model.t, ncp = d, scheme = scheme_name)
-    
-    def obj_expression(model):  # To perform dynamic simulation at different parameter values (including the initial conditions), the trick is to put the initial conditions later in the for loop
-        chisq_1 = sum((((model.x1meas[j] - model.x1[j])**2) / sigma[0]**2) + (((model.x2meas[j] - model.x2[j])**2) / sigma[1]**2) + (((model.x3meas[j] - model.x3[j])**2) / sigma[2]**2) for j in y_idx)
-        obj_fun = chisq_1
-        return obj_fun
-    model.objfun = py.Objective(rule = obj_expression)
-    
-    return model
+    Parameters
+    ----------
+    u_array : TYPE
+        DESCRIPTION.
+    y_array : TYPE
+        DESCRIPTION.
+    t_array : TYPE
+        DESCRIPTION.
+    pdtheta : TYPE
+        DESCRIPTION.
+    ig : TYPE
+        DESCRIPTION.
+    lb : TYPE
+        DESCRIPTION.
+    ub : TYPE
+        DESCRIPTION.
 
-def optikm3(u_array, y_array, t_array, pdtheta, ig, lb, ub): # MVK molecular
+    Returns
+    -------
+    None.
+
+    """
     
-    T0, P0, rho0 = 20.0, 1.0, 1.2
+    T0, P0 = 20.0, 1.0
     R, Tref = 8.314, 320
     y_idx, x1m, x2m, x3m = xmeas(t_array, y_array)
     tsp = tdomain(t_array)
