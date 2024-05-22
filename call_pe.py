@@ -102,9 +102,10 @@ FIM1_obs, COV1_obs, COR1_obs, dof1, CI1, tval1 = [], [], [], [], [], []
 FIM2_obs, COV2_obs, COR2_obs, dof2, CI2, tval2 = [], [], [], [], [], []
 FIM3_obs, COV3_obs, COR3_obs, dof3, CI3, tval3 = [], [], [], [], [], []
 
-# !!! One needs to put ipopt executable file in the path to use the solver
+# !!! One needs to put ipopt executable file in the anaconda Library folder to use the solver
+# !!! Please see the README file for details
 # NOTE: Parameter estimation using Pyomo model for power law kinetics
-solver_m1 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe')
+solver_m1 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe') # change the executable path after getting the ipopt executable file in your machine (look at readme file)
 optmodel_m1 = optikm1(u_p[0:mexp], ym_array[0:mexp], st[0:mexp], Pi[-1], ig_m1, lb_m1, ub_m1)
 soln_m1 = solver_m1.solve(optmodel_m1)
 est_m1 = np.array([py.value(optmodel_m1.theta[0]), py.value(optmodel_m1.theta[1])])
@@ -125,7 +126,7 @@ for i in range(mexp):
 
 
 # NOTE: Parameter estimation using Pyomo model for LHHW model
-solver_m2 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe')
+solver_m2 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe') # change the executable path after getting the ipopt executable file in your machine (look at readme file)
 optmodel_m2 = optikm2(u_p[0:mexp], ym_array[0:mexp], st[0:mexp], Pi[-1], ig_m2, lb_m2, ub_m2)
 soln_m2 = solver_m2.solve(optmodel_m2)
 est_m2 = np.array([py.value(optmodel_m2.theta[0]), py.value(optmodel_m2.theta[1]), py.value(optmodel_m2.theta[2]), py.value(optmodel_m2.theta[3]), py.value(optmodel_m2.theta[4]), py.value(optmodel_m2.theta[5])])
@@ -146,7 +147,7 @@ for i in range(mexp):
     
     
 # NOTE: Parameter estimation using Pyomo model for MVK model
-solver_m3 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe')
+solver_m3 = py.SolverFactory('ipopt', executable ='C:/Users/Arun/anaconda3/Library/Ipopt-3.14.6-win64-msvs2019-md/bin/ipopt.exe') # change the executable path after getting the ipopt executable file in your machine (look at readme file)
 optmodel_m3 = optikm3(u_p[0:mexp], ym_array[0:mexp], st[0:mexp], Pi[-1], ig_m3, lb_m3, ub_m3)
 soln_m3 = solver_m3.solve(optmodel_m3)
 est_m3 = np.array([py.value(optmodel_m3.theta[0]), py.value(optmodel_m3.theta[1]), py.value(optmodel_m3.theta[2]), py.value(optmodel_m3.theta[3]), py.value(optmodel_m3.theta[4]), py.value(optmodel_m3.theta[5])])
@@ -193,3 +194,9 @@ ig_pp1, b_pp1 = initialisation1_mbdoepp(y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_
 ig_pp0, b_pp0 = initialisation0_mbdoepp(y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_u,prng)
 sol_pp1 = minimize(mbdoepp, ig_pp1, method = 'SLSQP', bounds = (b_pp1), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_phi))
 sol_pp0 = minimize(mbdoepp, ig_pp0, method = 'SLSQP', bounds = (b_pp0), args = (y_meas,km3,est_m3,FIM3_obs[-1],Pi[-1],n_dexp,n_phi))
+
+# TODO: All the optimizations can be improved by adding a multistart sampling,
+# TODO: preferably Sobol sampling and then evaluating norm of gradient vector
+# TODO: (sensitivities of objective function with respect to the 
+# TODO: decision variables) at each of these sampling points to obtain
+# TODO: the best starting point for a local gradient-based optimization solver.
