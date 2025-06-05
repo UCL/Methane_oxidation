@@ -8,7 +8,7 @@ This repository contains code for identification of kinetic models for methane c
 - Pressure drop model to estimate the average pressure along the packed bed reactor
 - Model simulation
 - Maximum likelihood parameter estimation implemented in Pyomo (https://pyomo.readthedocs.io/en/stable/explanation/modeling/dae.html)
-- Probability of model adequacy expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follows the distribution of the measurement error) is true
+- Probability of model adequacy expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follow the distribution of the measurement error) is true
 - Computation of first order parameter sensitivities (using perturbation analysis and finite difference approximation of derivatives)
 - Computation of observed Fisher Information Matrix (FIM)
 - Statistical hypothesis tests for model adequacy (chisquare goodness of fit test) and for parameter precision (t test)
