@@ -11,9 +11,9 @@ This repository contains code for identification of kinetic models for methane c
 - `Probability of model adequacy` expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follow the distribution of the measurement error) is true
 - Computation of first order parameter sensitivities (using perturbation analysis and finite difference approximation of derivatives)
 - Computation of observed `Fisher Information Matrix (FIM)` using sensitivity matrix
-- Statistical hypothesis tests for model adequacy (chi-square goodness of fit test) and for parameter precision (_t_ test)
-- Computation of parameter covariance matrix (approximated as the inverse of FIM) and of parameter correlation matrix
-- Data generation to plot confidence ellipse for any pair of parameter estimates
+- Statistical hypothesis tests for `model adequacy` (chi-square goodness of fit test) and for `parameter precision` (_t_ test)
+- Computation of `parameter covariance matrix` (approximated as the inverse of FIM) and of `parameter correlation matrix`
+- Data generation to plot `confidence ellipse` for any pair of parameter estimates
 - Model based design of experiments for `model discrimination` (Buzzi Ferraris criterion) and `improving parameter precision` (autonomous switching between these objectives)
 - Data generation for `model prediction density plots` by propagating uncertainty in parameter estimates to uncertainty in response variables
 
