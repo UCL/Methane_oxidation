@@ -27,5 +27,6 @@ If you are using Anaconda Python, follow these steps:
 solver = SolverFactory('ipopt', executable='C:/Path/To/Anaconda/Library/bin/ipopt.exe')
 ```
 **Note**: Make sure the path matches where you have extracted the solver.
-**The Python functions implementing all the features mentioned above are provided in the file `closedloopmain.py`. The function calls to test these functions and execute the complete algorithm are included in `call_pe.py`. To test the code, use the data file `factrdata1.xlsx`, which is also the dataset used in the paper.**
+
+The Python functions implementing all the features mentioned above are provided in the file `closedloopmain.py`. The function calls to test these functions and execute the complete algorithm are included in `call_pe.py`. To test the code, use the data file `factrdata1.xlsx`, which is also the dataset used in the paper.
 
