@@ -10,7 +10,7 @@ This repository contains code for identification of kinetic models for methane c
 - Maximum likelihood parameter estimation implemented in Pyomo (https://pyomo.readthedocs.io/en/stable/explanation/modeling/dae.html)
 - Probability of model adequacy expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follow the distribution of the measurement error) is true
 - Computation of first order parameter sensitivities (using perturbation analysis and finite difference approximation of derivatives)
-- Computation of observed Fisher Information Matrix (FIM)
+- Computation of observed Fisher Information Matrix (FIM) using sensitivity matrix
 - Statistical hypothesis tests for model adequacy (chisquare goodness of fit test) and for parameter precision (t test)
 - Model based design of experiments for model discrimination (Buzzi Ferraris criterion) and improving parameter precision (autonomous switching between these objectives)
 - Data generation for model prediction density plots by propagating uncertainty of parameter estimates to uncertainty of response varaibles
@@ -24,5 +24,5 @@ If you are using Anaconda Python, follow these steps:
 ```python
 solver = SolverFactory('ipopt', executable='C:/Path/To/Anaconda/Library/bin/ipopt.exe')
 ```
-**Note**: Make sure the path matches where you have extarcted the solver.
+**Note**: Make sure the path matches where you have extracted the solver.
 
