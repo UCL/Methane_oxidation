@@ -7,18 +7,18 @@ This repository contains code for identification of kinetic models for methane c
 - Kinetic models for complete oxidation of methane in a micro-packed bed reactor, modelled as an isothermal plug flow reactor operated at steady state.
 - Pressure drop model to estimate the average pressure along the packed bed reactor
 - Model simulation tools
-- Maximum likelihood parameter estimation implemented in Pyomo (https://pyomo.readthedocs.io/en/stable/explanation/modeling/dae.html)
-- Probability of model adequacy expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follow the distribution of the measurement error) is true
+- Maximum likelihood parameter estimation implemented in `Pyomo` (https://pyomo.readthedocs.io/en/stable/explanation/modeling/dae.html)
+- `Probability of model adequacy` expressed as probability not to reject a model assuming null hypothesis (the residuals of the model follow the distribution of the measurement error) is true
 - Computation of first order parameter sensitivities (using perturbation analysis and finite difference approximation of derivatives)
-- Computation of observed Fisher Information Matrix (FIM) using sensitivity matrix
+- Computation of observed `Fisher Information Matrix (FIM)` using sensitivity matrix
 - Statistical hypothesis tests for model adequacy (chi-square goodness of fit test) and for parameter precision (_t_ test)
-- Computation of paramater covariance matrix (approximated as the inverse of FIM) and of parameter correlation matrix
+- Computation of parameter covariance matrix (approximated as the inverse of FIM) and of parameter correlation matrix
 - Data generation to plot confidence ellipse for any pair of parameter estimates
-- Model based design of experiments for model discrimination (Buzzi Ferraris criterion) and improving parameter precision (autonomous switching between these objectives)
-- Data generation for model prediction density plots by propagating uncertainty in parameter estimates to uncertainty in response variables
+- Model based design of experiments for `model discrimination` (Buzzi Ferraris criterion) and `improving parameter precision` (autonomous switching between these objectives)
+- Data generation for `model prediction density plots` by propagating uncertainty in parameter estimates to uncertainty in response variables
 
 ## 💡 Usage Notes
-The parameter estimation in this work was performed using Pyomo (https://www.pyomo.org/) with the IPOPT solver. To use IPOPT, download the executable from the official IPOPT GitHub releases page (https://github.com/coin-or/Ipopt/releases). 
+The parameter estimation in this work was performed using `Pyomo` (https://www.pyomo.org/) with the `IPOPT` solver. To use IPOPT, download the executable from the official IPOPT GitHub releases page (https://github.com/coin-or/Ipopt/releases). 
 If you are using Anaconda Python, follow these steps:
 1. Download the zip file (Ipopt-3.14.16-win64-msvs2019-md.zip) from the link above.
 2. Extract the contents of the ZIP file to your Anaconda "Library" folder (typically located inside your Anaconda installation path). 
