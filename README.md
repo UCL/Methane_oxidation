@@ -21,6 +21,8 @@ If you are using Anaconda Python, follow these steps:
 1. Download the zip file (Ipopt-3.14.16-win64-msvs2019-md.zip) from the link above.
 2. Extract the contents of the ZIP file to your Anaconda "Library" folder (typically located inside your Anaconda installation path). 
 3. In the Pyomo parameter estimation script, provide the full path to the IPOPT executable (e.g., ipopt.exe) when creating the solver instance, like this:
+```python
 solver = SolverFactory('ipopt', executable='C:/Path/To/Anaconda/Library/bin/ipopt.exe')
-Make sure the path matches where you have extarcted the solver.
+```
+**Note**: Make sure the path matches where you have extarcted the solver.
 
